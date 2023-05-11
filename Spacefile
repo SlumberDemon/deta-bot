@@ -1,0 +1,13 @@
+v: 0
+micros:
+  - name: bot
+    src: .
+    engine: python3.9
+    public_routes:
+      - "/interactions"
+    run: uvicorn main:app
+    presets:
+      env:
+        - name: APPLICATION_ID
+        - name: APPLICATION_TOKEN
+        - name: APPLICATION_PUBLIC_KEY
