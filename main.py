@@ -96,8 +96,7 @@ async def tag(i: discohook.Interaction, query: str):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
 
-    title = metadata.get("embed", {}).get("title")
-    # title = metadata.get("title")
+    title = metadata.get("title")
     e = discohook.Embed(title=title, description=content, color=0xEE4196)
     await i.response(embed=e, view=v)
 
