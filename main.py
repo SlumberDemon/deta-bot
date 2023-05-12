@@ -82,21 +82,27 @@ async def d_ac(i: discohook.Interaction, value: str):
     ],
 )
 async def tag(i: discohook.Interaction, query: str):
-    btn = discohook.Button(label="🗑️", style=discohook.ButtonStyle.grey)
-
-    v = discohook.View()
-    v.add_buttons(btn)
-
-    @btn.on_interaction
-    async def on_submit(i: discohook.Interaction):
-        await i.message.delete()
-
     data = requests.get(query).text.strip()
     if data.startswith("---"):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
 
     title = metadata.get("title")
+
+    dlt = discohook.Button(label="🗑️", style=discohook.ButtonStyle.grey)
+    edt = discohook.Button(
+        label="✏️ Edit",
+        url=f"https://github.com/SlumberDemon/deta-bot/blob/main/resources/tags/{query.split('/tags/')[1]}",
+        style=discohook.ButtonStyle.link,
+    )
+
+    v = discohook.View()
+    v.add_buttons(edt, dlt)
+
+    @dlt.on_interaction
+    async def on_submit(i: discohook.Interaction):
+        await i.message.delete()
+
     e = discohook.Embed(title=title, description=content, color=0xEE4196)
     await i.response(embed=e, view=v)
 
