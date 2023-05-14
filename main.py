@@ -1,6 +1,6 @@
 import os
 
-import requests
+import httpx
 import yaml
 from discohook import (
     Button,
@@ -71,7 +71,7 @@ async def docs(i: Interaction, *, query: str):
 
 @docs.autocomplete(name="query")
 async def docs_autocomplete(i: Interaction, value: str):
-    hits = requests.get(f"https://teletype.deta.dev/search?q={value}&l=25").json()["hits"]
+    hits = httpx.get(f"https://teletype.deta.dev/search?q={value}&l=25").json()["hits"]
     await i.autocomplete(choices=[Choice(name=hit["fragments"], value=hit["url"]) for hit in hits])
 
 
@@ -88,7 +88,7 @@ async def docs_autocomplete(i: Interaction, value: str):
     ],
 )
 async def tag(i: Interaction, query: str):
-    data = requests.get(query).text.strip()
+    data = httpx.get(query).text.strip()
     if data.startswith("---"):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
@@ -117,7 +117,7 @@ async def tag(i: Interaction, query: str):
 
 @tag.autocomplete(name="query")
 async def tag_autocomplete(i: Interaction, value: str):
-    tags_info = requests.get("https://api.github.com/repos/slumberdemon/deta-bot/contents/resources/tags").json()
+    tags_info = httpx.get("https://api.github.com/repos/slumberdemon/deta-bot/contents/resources/tags").json()
 
     items = []
     for tag_item in tags_info:

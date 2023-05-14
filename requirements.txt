@@ -1,6 +1,5 @@
 git+https://github.com/jnsougata/discohook
-python-Levenshtein
-thefuzz[speedup]
-requests
-uvicorn
+httpx
 PyYAML
+thefuzz[speedup]
+uvicorn
