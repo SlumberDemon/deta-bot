@@ -88,12 +88,15 @@ async def docs_autocomplete(i: Interaction, value: str):
     ],
 )
 async def tag(i: Interaction, query: str):
-    data = httpx.get(query).text.strip()
+    if not query.endswith(".md"):
+        query = f"{query}.md"
+    with open(f"resources/tags/{query}", "r") as file:
+        data = file.read()
     if data.startswith("---"):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
     else:
-        raise ValueError(f"Failed to parse tag with url {query}.")
+        raise ValueError(f"Failed to parse tag '{query}'.")
 
     title = metadata.get("title")
 
@@ -117,13 +120,11 @@ async def tag(i: Interaction, query: str):
 
 @tag.autocomplete(name="query")
 async def tag_autocomplete(i: Interaction, value: str):
-    tags_info = httpx.get("https://api.github.com/repos/slumberdemon/deta-bot/contents/resources/tags").json()
-
-    items = []
-    for tag_item in tags_info:
-        ratio = fuzz.ratio(tag_item["name"].replace(".md", ""), value.lower())
-        if ratio > 25:
-            if len(items) <= 25:
-                items.append({"name": tag_item["name"].replace(".md", ""), "url": tag_item["download_url"]})
-
-    await i.autocomplete(choices=[Choice(name=item["name"], value=item["url"]) for item in items])
+    tags_list = os.listdir("resources/tags")
+    choices = []
+    for filename in tags_list:
+        name = filename.replace(".md", "")
+        ratio = fuzz.ratio(name, value.lower())
+        if len(choices) <= 25 < ratio:
+            choices.append(Choice(name=name, value=filename))
+    await i.autocomplete(choices)
