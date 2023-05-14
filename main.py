@@ -1,79 +1,85 @@
 import os
-import yaml
+
 import requests
-import discohook
+import yaml
+from discohook import (
+    Button,
+    ButtonStyle,
+    Choice,
+    Client,
+    Embed,
+    Interaction,
+    PartialEmoji,
+    StringOption,
+    View,
+)
 from thefuzz import fuzz
 
-# Setup
+APPLICATION_ID = os.getenv("APPLICATION_ID")
+APPLICATION_TOKEN = os.getenv("APPLICATION_TOKEN")
+APPLICATION_PUBLIC_KEY = os.getenv("APPLICATION_PUBLIC_KEY")
 
-app = discohook.Client(
-    application_id=os.getenv("APPLICATION_ID"),
-    token=os.getenv("APPLICATION_TOKEN"),
-    public_key=os.getenv("APPLICATION_PUBLIC_KEY"),
+if not (APPLICATION_ID and APPLICATION_TOKEN and APPLICATION_PUBLIC_KEY):
+    raise ValueError("Missing environment variables.")
+
+app = Client(
+    application_id=APPLICATION_ID,
+    token=APPLICATION_TOKEN,
+    public_key=APPLICATION_PUBLIC_KEY,
 )
 
 
-# Error Handler
-
-
 @app.on_error
-async def on_error(i: discohook.Interaction, err: Exception):
+async def on_error(i: Interaction, err: Exception):
     if i.responded:
         await i.followup(f"```py\nError: {err}\n```", ephemeral=True)
     else:
         await i.response(f"```py\nError: {err}\n```", ephemeral=True)
 
 
-# Docs
-
-
 @app.command(
     name="docs",
     description="Search for documentation",
     options=[
-        discohook.StringOption(
-            name="query", description="Doc query", required=True, autocomplete=True
+        StringOption(
+            name="query",
+            description="Doc query",
+            required=True,
+            autocomplete=True,
         )
     ],
 )
-async def docs(i: discohook.Interaction, *, query: str):
-    btn = discohook.Button(
+async def docs(i: Interaction, *, query: str):
+    button = Button(
         label="Open in Space",
         url=query,
-        style=discohook.ButtonStyle.link,
-        emoji=discohook.PartialEmoji(name="deta", id="1047502818208137336"),
+        style=ButtonStyle.link,
+        emoji=PartialEmoji(name="deta", id="1047502818208137336"),
     )
 
-    v = discohook.View()
-    v.add_buttons(btn)
+    view = View()
+    view.add_buttons(button)
 
-    e = discohook.Embed(
+    embed = Embed(
         description=f"> [`/{query.split('/en/')[1]}`]({query})",
         color=0xEE4196,
     )
-    e.author(name="Doc Search", icon_url=i.author.avatar.url)
+    embed.author(name="Doc Search", icon_url=i.author.avatar.url)  # type: ignore
 
-    await i.response(embed=e, view=v)
+    await i.response(embed=embed, view=view)
 
 
 @docs.autocomplete(name="query")
-async def d_ac(i: discohook.Interaction, value: str):
-    data = requests.get(f"https://teletype.deta.dev/search?q={value}&l=25").json()[
-        "hits"
-    ]
-    await i.autocomplete(
-        choices=[discohook.Choice(name=a["fragments"], value=a["url"]) for a in data]
-    )
-
-
-# Tag
+async def docs_autocomplete(i: Interaction, value: str):
+    hits = requests.get(f"https://teletype.deta.dev/search?q={value}&l=25").json()["hits"]
+    await i.autocomplete(choices=[Choice(name=hit["fragments"], value=hit["url"]) for hit in hits])
 
 
 @app.command(
     name="tag",
     description="Search for tag",
     options=[
-        discohook.StringOption(
+        StringOption(
             name="query",
             description="Tag name",
             required=True,
@@ -81,46 +87,43 @@ async def d_ac(i: discohook.Interaction, value: str):
         )
     ],
 )
-async def tag(i: discohook.Interaction, query: str):
+async def tag(i: Interaction, query: str):
     data = requests.get(query).text.strip()
     if data.startswith("---"):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
+    else:
+        raise ValueError(f"Failed to parse tag with url {query}.")
 
     title = metadata.get("title")
 
-    dlt = discohook.Button(label="🗑️", style=discohook.ButtonStyle.grey)
-    edt = discohook.Button(
+    delete_button = Button(label="🗑️", style=ButtonStyle.grey)
+    edit_button = Button(
         label="✏️ Edit",
         url=f"https://github.com/SlumberDemon/deta-bot/blob/main/resources/tags/{query.split('/tags/')[1]}",
-        style=discohook.ButtonStyle.link,
+        style=ButtonStyle.link,
     )
 
-    v = discohook.View()
-    v.add_buttons(edt, dlt)
+    view = View()
+    view.add_buttons(edit_button, delete_button)
 
-    @dlt.on_interaction
-    async def on_submit(i: discohook.Interaction):
-        await i.message.delete()
+    @delete_button.on_interaction
+    async def on_submit(i: Interaction):
+        await i.message.delete()  # type: ignore
 
-    e = discohook.Embed(title=title, description=content, color=0xEE4196)
-    await i.response(embed=e, view=v)
+    embed = Embed(title=title, description=content, color=0xEE4196)
+    await i.response(embed=embed, view=view)
 
 
 @tag.autocomplete(name="query")
-async def t_ac(i: discohook.Interaction, value: str):
-    data = requests.get(
-        "https://api.github.com/repos/slumberdemon/deta-bot/contents/resources/tags"
-    ).json()
+async def tag_autocomplete(i: Interaction, value: str):
+    tags_info = requests.get("https://api.github.com/repos/slumberdemon/deta-bot/contents/resources/tags").json()
 
     items = []
-    for d in data:
-        ratio = fuzz.ratio(d["name"].replace(".md", ""), value.lower())
+    for tag_item in tags_info:
+        ratio = fuzz.ratio(tag_item["name"].replace(".md", ""), value.lower())
         if ratio > 25:
             if len(items) <= 25:
-                items.append(
-                    {"name": d["name"].replace(".md", ""), "url": d["download_url"]}
-                )
-    await i.autocomplete(
-        choices=[discohook.Choice(name=a["name"], value=a["url"]) for a in items]
-    )
+                items.append({"name": tag_item["name"].replace(".md", ""), "url": tag_item["download_url"]})
+
+    await i.autocomplete(choices=[Choice(name=item["name"], value=item["url"]) for item in items])
