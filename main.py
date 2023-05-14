@@ -18,6 +18,7 @@ from thefuzz import fuzz
 APPLICATION_ID = os.getenv("APPLICATION_ID")
 APPLICATION_TOKEN = os.getenv("APPLICATION_TOKEN")
 APPLICATION_PUBLIC_KEY = os.getenv("APPLICATION_PUBLIC_KEY")
+REPOSITORY_URL = os.getenv("REPOSITORY_URL")
 
 if not (APPLICATION_ID and APPLICATION_TOKEN and APPLICATION_PUBLIC_KEY):
     raise ValueError("Missing environment variables.")
@@ -87,23 +88,23 @@ async def docs_autocomplete(i: Interaction, value: str):
         )
     ],
 )
-async def tag(i: Interaction, query: str):
-    if not query.endswith(".md"):
-        query = f"{query}.md"
-    with open(f"resources/tags/{query}", "r") as file:
+async def tag(i: Interaction, name: str):
+    if not name.endswith(".md"):
+        name = f"{name}.md"
+    with open(f"resources/tags/{name}", "r") as file:
         data = file.read()
     if data.startswith("---"):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
     else:
-        raise ValueError(f"Failed to parse tag '{query}'.")
+        raise ValueError(f"Failed to parse tag '{name}'.")
 
     title = metadata.get("title")
 
     delete_button = Button(label="🗑️", style=ButtonStyle.grey)
     edit_button = Button(
         label="✏️ Edit",
-        url=f"https://github.com/SlumberDemon/deta-bot/blob/main/resources/tags/{query.split('/tags/')[1]}",
+        url=f"{REPOSITORY_URL}/blob/main/resources/tags/{name}",
         style=ButtonStyle.link,
     )
 
@@ -120,11 +121,11 @@ async def tag(i: Interaction, query: str):
 
 @tag.autocomplete(name="query")
 async def tag_autocomplete(i: Interaction, value: str):
-    tags_list = os.listdir("resources/tags")
+    filenames = os.listdir("resources/tags")
     choices = []
-    for filename in tags_list:
+    for filename in filenames:
         name = filename.replace(".md", "")
         ratio = fuzz.ratio(name, value.lower())
-        if len(choices) <= 25 < ratio:
+        if len(choices) < 25 < ratio:
             choices.append(Choice(name=name, value=filename))
     await i.autocomplete(choices)
