@@ -1,4 +1,4 @@
-git+https://github.com/jnsougata/discohook
+git+https://github.com/jnsougata/discohook.git@aac0bb56fda4be5fc1606d130d7a4c828d404ac9
 httpx
 PyYAML
 thefuzz[speedup]
