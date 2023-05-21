@@ -76,7 +76,7 @@ async def docs_autocomplete(i: Interaction, value: str):
 
 @app.command(
     name="tag",
-    description="Search tags.",
+    description="Display a tag.",
     options=[
         StringOption(
             name="name",
