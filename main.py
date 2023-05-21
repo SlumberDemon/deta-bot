@@ -51,29 +51,27 @@ async def on_error(i: Interaction, error: Exception):
     ],
 )
 async def docs(i: Interaction, *, query: str):
+    hit = httpx.get(f"https://teletype.deta.dev/search?q={query}&l=1").json()["hits"][0]
     button = Button(
-        label="Open in Space",
-        url=query,
+        label="Open docs page",
+        url=hit["url"],
         style=ButtonStyle.link,
         emoji=PartialEmoji(name="deta", id="1047502818208137336"),
     )
-
     view = View()
     view.add_buttons(button)
-
     embed = Embed(
-        description=f"> [`/{query.split('/en/')[1]}`]({query})",
+        title="Deta Docs",
+        description=f"[{hit['fragments']}]({hit['url']})",
         color=0xEE4196,
     )
-    embed.author(name="Doc Search", icon_url=i.author.avatar.url)  # type: ignore
-
     await i.response(embed=embed, view=view)
 
 
 @docs.autocomplete(name="query")
 async def docs_autocomplete(i: Interaction, value: str):
     hits = httpx.get(f"https://teletype.deta.dev/search?q={value}&l=25").json()["hits"]
-    await i.autocomplete(choices=[Choice(name=hit["fragments"], value=hit["url"]) for hit in hits])
+    await i.autocomplete(choices=[Choice(name=hit["fragments"], value=hit["fragments"]) for hit in hits])
 
 
 @app.command(
