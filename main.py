@@ -91,8 +91,11 @@ async def docs_autocomplete(i: Interaction, value: str):
 async def tag(i: Interaction, name: str):
     if not name.endswith(".md"):
         name = f"{name}.md"
-    with open(f"resources/tags/{name}", "r") as file:
-        data = file.read()
+    try:
+        with open(f"resources/tags/{name}", "r") as file:
+            data = file.read()
+    except FileNotFoundError as exc:
+        raise ValueError(f"tag '{name}' not found") from exc
     if data.startswith("---"):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
