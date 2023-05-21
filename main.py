@@ -81,7 +81,7 @@ async def docs_autocomplete(i: Interaction, value: str):
     description="Search for tag",
     options=[
         StringOption(
-            name="query",
+            name="name",
             description="Tag name",
             required=True,
             autocomplete=True,
@@ -119,7 +119,7 @@ async def tag(i: Interaction, name: str):
     await i.response(embed=embed, view=view)
 
 
-@tag.autocomplete(name="query")
+@tag.autocomplete(name="name")
 async def tag_autocomplete(i: Interaction, value: str):
     filenames = os.listdir("resources/tags")
     choices = []
