@@ -21,7 +21,7 @@ APPLICATION_PUBLIC_KEY = os.getenv("APPLICATION_PUBLIC_KEY")
 REPOSITORY_URL = os.getenv("REPOSITORY_URL")
 
 if not (APPLICATION_ID and APPLICATION_TOKEN and APPLICATION_PUBLIC_KEY):
-    raise ValueError("Missing environment variables.")
+    raise ValueError("missing environment variables")
 
 app = Client(
     application_id=APPLICATION_ID,
@@ -31,20 +31,20 @@ app = Client(
 
 
 @app.on_error
-async def on_error(i: Interaction, err: Exception):
+async def on_error(i: Interaction, error: Exception):
     if i.responded:
-        await i.followup(f"```py\nError: {err}\n```", ephemeral=True)
+        await i.followup(f"```py\nError: {error}\n```", ephemeral=True)
     else:
-        await i.response(f"```py\nError: {err}\n```", ephemeral=True)
+        await i.response(f"```py\nError: {error}\n```", ephemeral=True)
 
 
 @app.command(
     name="docs",
-    description="Search for documentation",
+    description="Search Deta docs.",
     options=[
         StringOption(
             name="query",
-            description="Doc query",
+            description="Search query.",
             required=True,
             autocomplete=True,
         )
@@ -78,11 +78,11 @@ async def docs_autocomplete(i: Interaction, value: str):
 
 @app.command(
     name="tag",
-    description="Search for tag",
+    description="Search tags.",
     options=[
         StringOption(
             name="name",
-            description="Tag name",
+            description="Tag name.",
             required=True,
             autocomplete=True,
         )
@@ -97,7 +97,7 @@ async def tag(i: Interaction, name: str):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
     else:
-        raise ValueError(f"Failed to parse tag '{name}'.")
+        raise ValueError(f"failed to parse tag '{name}'")
 
     title = metadata.get("title")
 
