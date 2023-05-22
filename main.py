@@ -105,7 +105,7 @@ async def tag(i: Interaction, name: str):
     else:
         raise ValueError(f"failed to parse tag '{name}'")
     title = metadata.get("title")
-    delete_button = Button(label="🗑️", style=ButtonStyle.grey)
+    delete_button = Button(label="🗑️", custom_id="delete", style=ButtonStyle.grey)
     edit_button = Button(
         label="✏️ Edit",
         url=f"{REPOSITORY_URL}/blob/{GIT_BRANCH}/resources/tags/{name}",
