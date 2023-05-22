@@ -12,3 +12,5 @@ micros:
         - name: APPLICATION_TOKEN
         - name: APPLICATION_PUBLIC_KEY
         - name: REPOSITORY_URL
+        - name: GIT_BRANCH
+          default: main

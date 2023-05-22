@@ -19,6 +19,7 @@ APPLICATION_ID = os.getenv("APPLICATION_ID")
 APPLICATION_TOKEN = os.getenv("APPLICATION_TOKEN")
 APPLICATION_PUBLIC_KEY = os.getenv("APPLICATION_PUBLIC_KEY")
 REPOSITORY_URL = os.getenv("REPOSITORY_URL")
+GIT_BRANCH = os.getenv("GIT_BRANCH", "main")
 
 if not (APPLICATION_ID and APPLICATION_TOKEN and APPLICATION_PUBLIC_KEY and REPOSITORY_URL):
     raise ValueError("missing environment variables")
@@ -103,7 +104,7 @@ async def tag(i: Interaction, name: str):
     delete_button = Button(label="🗑️", style=ButtonStyle.grey)
     edit_button = Button(
         label="✏️ Edit",
-        url=f"{REPOSITORY_URL}/blob/main/resources/tags/{name}",
+        url=f"{REPOSITORY_URL}/blob/{GIT_BRANCH}/resources/tags/{name}",
         style=ButtonStyle.link,
     )
     view = View()
