@@ -99,16 +99,13 @@ async def tag(i: Interaction, name: str):
         metadata = yaml.safe_load(meta)
     else:
         raise ValueError(f"failed to parse tag '{name}'")
-
     title = metadata.get("title")
-
     delete_button = Button(label="🗑️", style=ButtonStyle.grey)
     edit_button = Button(
         label="✏️ Edit",
         url=f"{REPOSITORY_URL}/blob/main/resources/tags/{name}",
         style=ButtonStyle.link,
     )
-
     view = View()
     view.add_buttons(edit_button, delete_button)
 
