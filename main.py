@@ -18,9 +18,10 @@ from thefuzz import fuzz
 APPLICATION_ID = os.getenv("APPLICATION_ID")
 APPLICATION_TOKEN = os.getenv("APPLICATION_TOKEN")
 APPLICATION_PUBLIC_KEY = os.getenv("APPLICATION_PUBLIC_KEY")
+REPOSITORY_URL = os.getenv("REPOSITORY_URL")
 
-if not (APPLICATION_ID and APPLICATION_TOKEN and APPLICATION_PUBLIC_KEY):
-    raise ValueError("Missing environment variables.")
+if not (APPLICATION_ID and APPLICATION_TOKEN and APPLICATION_PUBLIC_KEY and REPOSITORY_URL):
+    raise ValueError("missing environment variables")
 
 app = Client(
     application_id=APPLICATION_ID,
@@ -30,80 +31,81 @@ app = Client(
 
 
 @app.on_error
-async def on_error(i: Interaction, err: Exception):
+async def on_error(i: Interaction, error: Exception):
     if i.responded:
-        await i.followup(f"```py\nError: {err}\n```", ephemeral=True)
+        await i.followup(f"```py\nError: {error}\n```", ephemeral=True)
     else:
-        await i.response(f"```py\nError: {err}\n```", ephemeral=True)
+        await i.response(f"```py\nError: {error}\n```", ephemeral=True)
 
 
 @app.command(
     name="docs",
-    description="Search for documentation",
+    description="Search Deta docs.",
     options=[
         StringOption(
             name="query",
-            description="Doc query",
+            description="Search query.",
             required=True,
             autocomplete=True,
         )
     ],
 )
 async def docs(i: Interaction, *, query: str):
+    hit = httpx.get(f"https://teletype.deta.dev/search?q={query}&l=1").json()["hits"][0]
     button = Button(
-        label="Open in Space",
-        url=query,
+        label="Open docs page",
+        url=hit["url"],
         style=ButtonStyle.link,
         emoji=PartialEmoji(name="deta", id="1047502818208137336"),
     )
-
     view = View()
     view.add_buttons(button)
-
     embed = Embed(
-        description=f"> [`/{query.split('/en/')[1]}`]({query})",
+        title="Deta Docs",
+        description=f"[{hit['fragments']}]({hit['url']})",
         color=0xEE4196,
     )
-    embed.author(name="Doc Search", icon_url=i.author.avatar.url)  # type: ignore
-
     await i.response(embed=embed, view=view)
 
 
 @docs.autocomplete(name="query")
 async def docs_autocomplete(i: Interaction, value: str):
     hits = httpx.get(f"https://teletype.deta.dev/search?q={value}&l=25").json()["hits"]
-    await i.autocomplete(choices=[Choice(name=hit["fragments"], value=hit["url"]) for hit in hits])
+    await i.autocomplete(choices=[Choice(name=hit["fragments"], value=hit["fragments"]) for hit in hits])
 
 
 @app.command(
     name="tag",
-    description="Search for tag",
+    description="Display a tag.",
     options=[
         StringOption(
-            name="query",
-            description="Tag name",
+            name="name",
+            description="Tag name.",
             required=True,
             autocomplete=True,
         )
     ],
 )
-async def tag(i: Interaction, query: str):
-    data = httpx.get(query).text.strip()
+async def tag(i: Interaction, name: str):
+    if not name.endswith(".md"):
+        name = f"{name}.md"
+    try:
+        with open(f"resources/tags/{name}", "r") as file:
+            data = file.read()
+    except FileNotFoundError as exc:
+        raise ValueError(f"tag '{name}' not found") from exc
     if data.startswith("---"):
         _, meta, content = data.split("---", 2)
         metadata = yaml.safe_load(meta)
     else:
-        raise ValueError(f"Failed to parse tag with url {query}.")
-
+        raise ValueError(f"failed to parse tag '{name}'")
     title = metadata.get("title")
-
     delete_button = Button(label="🗑️", style=ButtonStyle.grey)
     edit_button = Button(
         label="✏️ Edit",
-        url=f"https://github.com/SlumberDemon/deta-bot/blob/main/resources/tags/{query.split('/tags/')[1]}",
+        url=f"{REPOSITORY_URL}/blob/main/resources/tags/{name}",
         style=ButtonStyle.link,
     )
-
     view = View()
     view.add_buttons(edit_button, delete_button)
 
@@ -115,15 +117,13 @@ async def tag(i: Interaction, query: str):
     await i.response(embed=embed, view=view)
 
 
-@tag.autocomplete(name="query")
+@tag.autocomplete(name="name")
 async def tag_autocomplete(i: Interaction, value: str):
-    tags_info = httpx.get("https://api.github.com/repos/slumberdemon/deta-bot/contents/resources/tags").json()
-
-    items = []
-    for tag_item in tags_info:
-        ratio = fuzz.ratio(tag_item["name"].replace(".md", ""), value.lower())
-        if ratio > 25:
-            if len(items) <= 25:
-                items.append({"name": tag_item["name"].replace(".md", ""), "url": tag_item["download_url"]})
-
-    await i.autocomplete(choices=[Choice(name=item["name"], value=item["url"]) for item in items])
+    filenames = os.listdir("resources/tags")
+    choices = []
+    for filename in filenames:
+        name = filename.replace(".md", "")
+        ratio = fuzz.ratio(name, value.lower())
+        if len(choices) < 25 < ratio:
+            choices.append(Choice(name=name, value=filename))
+    await i.autocomplete(choices)

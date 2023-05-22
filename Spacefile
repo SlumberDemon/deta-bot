@@ -11,3 +11,4 @@ micros:
         - name: APPLICATION_ID
         - name: APPLICATION_TOKEN
         - name: APPLICATION_PUBLIC_KEY
+        - name: REPOSITORY_URL
