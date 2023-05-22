@@ -21,7 +21,9 @@ APPLICATION_PUBLIC_KEY = os.getenv("APPLICATION_PUBLIC_KEY")
 REPOSITORY_URL = os.getenv("REPOSITORY_URL")
 GIT_BRANCH = os.getenv("GIT_BRANCH", "main")
 
-if not (APPLICATION_ID and APPLICATION_TOKEN and APPLICATION_PUBLIC_KEY and REPOSITORY_URL):
+if not (
+    APPLICATION_ID and APPLICATION_TOKEN and APPLICATION_PUBLIC_KEY and REPOSITORY_URL
+):
     raise ValueError("missing environment variables")
 
 app = Client(
@@ -72,7 +74,9 @@ async def docs(i: Interaction, *, query: str):
 @docs.autocomplete(name="query")
 async def docs_autocomplete(i: Interaction, value: str):
     hits = httpx.get(f"https://teletype.deta.dev/search?q={value}&l=25").json()["hits"]
-    await i.autocomplete(choices=[Choice(name=hit["fragments"], value=hit["fragments"]) for hit in hits])
+    await i.autocomplete(
+        choices=[Choice(name=hit["fragments"], value=hit["fragments"]) for hit in hits]
+    )
 
 
 @app.command(
